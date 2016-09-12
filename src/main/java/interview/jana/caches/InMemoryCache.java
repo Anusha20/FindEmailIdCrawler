@@ -1,4 +1,4 @@
-package interview.jana.crawler;
+package interview.jana.caches;
 
 import java.util.concurrent.ConcurrentHashMap;
 /**

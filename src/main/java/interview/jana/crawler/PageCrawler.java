@@ -12,6 +12,8 @@ import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
 import org.jsoup.select.Elements;
 
+import interview.jana.processors.TaskProcessor;
+
 /**
  * Crawler that visits all the discoverable pages from the input url, It finds
  * the emailIds from the discovered pages.
@@ -19,22 +21,21 @@ import org.jsoup.select.Elements;
  * @author Anusha
  *
  */
-public class PageCrawler implements Runnable {
+public class PageCrawler  {
 
-	private PageCache cache;
-	private String homeURL;
+	
 	private static String emailPattern = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[a-zA-Z]{2,}+$";
 	private Cleaner cleaner;
 	private Whitelist whiteList;
 	private String currentURL;
-	private static EmailStore emailStore = new EmailStore();
+	private TaskProcessor processor;
 
-	public PageCrawler(PageCache cache, String homeURL, String currentURL) {
-		this.cache = cache;
-		this.homeURL = homeURL;
+	public PageCrawler(String currentURL,TaskProcessor processor) {
+		//this.cache = FindEmailIds.cache;
 		this.whiteList = Whitelist.basic();
 		this.cleaner = new Cleaner(whiteList);
 		this.currentURL = currentURL;
+		this.processor = processor;
 
 	}
 
@@ -46,12 +47,12 @@ public class PageCrawler implements Runnable {
 	 * 
 	 * @param URL
 	 */
-	public void processPage(String URL) {
-		if (!cache.isPageAvailable(URL)) {
+	public void processPage() {
+		if (!FindEmailIds.cache.isPageAvailable(currentURL)) {
 			try {
-				Document dirtydoc = Jsoup.connect(URL).get();
+				Document dirtydoc = Jsoup.connect(currentURL).get();
 				Document doc = cleaner.clean(dirtydoc);
-				cache.insertPage(URL);
+				FindEmailIds.cache.insertPage(currentURL);
 				crawlinternalPages(doc);
 
 			} catch (HttpStatusException e1) {
@@ -59,9 +60,9 @@ public class PageCrawler implements Runnable {
 			} catch (org.jsoup.UnsupportedMimeTypeException e2) {
 				System.err.println("Unable to Parse Mime type:" + e2.getUrl() +":"+ e2.getMimeType());
 			} catch (SocketTimeoutException e3) {
-				System.err.println(e3.getMessage()+":"+URL);
+				System.err.println(e3.getMessage()+":"+currentURL);
 			} catch (IOException e) {
-				System.err.println(e.getMessage()+":"+URL);
+				System.err.println(e.getMessage()+":"+currentURL);
 			}
 		}
 
@@ -74,17 +75,20 @@ public class PageCrawler implements Runnable {
 		for (Element link : links) {
 			String url = link.attr("abs:href");
 			url = url.trim();
-			// System.out.println(url);
-			if (url.contains(homeURL)) {
-				FindEmailIds.executor.submit(new PageCrawler(this.cache, this.homeURL, url));
+			
+			if (url.contains(FindEmailIds.homeURL)) {
+				if (!FindEmailIds.cache.isPageAvailable(url)){
+					processor.submitForProcessing(url);
+				}
 				// processPage(url);
 			}
 		}
 	}
 
 	public void printEmailIds(Elements emails) {
+	
 		for (Element id : emails) {
-			emailStore.addEmailIds(id.text());
+			FindEmailIds.emailStore.addEmailIds(id.text());
 		}
 	}
 
@@ -94,9 +98,6 @@ public class PageCrawler implements Runnable {
 		return emails;
 	}
 
-	public void run() {
-		processPage(currentURL);
-
-	}
+	
 
 }

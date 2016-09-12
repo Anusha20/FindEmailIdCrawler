@@ -1,8 +1,8 @@
-package interview.jana.crawler;
+package interview.jana.caches;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class EmailStore {
+public class InMemoryEmailStore implements EmailStoreCache {
 	private ConcurrentHashMap<String,Boolean> emailIds = new ConcurrentHashMap<String,Boolean>();
 	/**
 	 * Printing the Ids if they are newly added to the store

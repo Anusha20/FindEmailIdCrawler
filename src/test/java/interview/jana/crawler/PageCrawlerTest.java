@@ -15,7 +15,8 @@ public class PageCrawlerTest {
 				  + "<li>xbu@abc.com</li>"
 				  +"</body></html>";
 				Document doc = Jsoup.parse(html);
-				Elements ele = new PageCrawler(new InMemoryCache(), "abc.com", "http://abc.com").getEmailIds(doc);
+				FindEmailIds.initializeWithInMemoryCache("abc.com");
+				Elements ele = new PageCrawler("http://abc.com",new MockProcessor()).getEmailIds(doc);
 				org.junit.Assert.assertEquals(1, ele.size());
 				org.junit.Assert.assertEquals("xbu@abc.com", ele.get(0).text());
 	}
@@ -29,16 +30,12 @@ public class PageCrawlerTest {
 				  +"<a href=\"http://example2.com\"><b>example2</b></a>"
 				  +"</body></html>";
 				Document doc = Jsoup.parse(html);
-				PageCache cache = new InMemoryCache();
-				new PageCrawler(cache, "abc.com", "http://abc.com").crawlinternalPages(doc);
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				org.junit.Assert.assertEquals(true,cache.isPageAvailable("http://example1.abc.com") );
-				org.junit.Assert.assertEquals(false,cache.isPageAvailable("http://example2.com") );
+				FindEmailIds.initializeWithInMemoryCache("abc.com");
+				MockProcessor processor = new MockProcessor();
+				 PageCrawler crawler =  new PageCrawler("abc.com",processor);
+				 crawler.crawlinternalPages(doc);
+				org.junit.Assert.assertEquals(true,FindEmailIds.cache.isPageAvailable("http://example1.abc.com") );
+				org.junit.Assert.assertEquals(false,FindEmailIds.cache.isPageAvailable("http://example2.com") );
 	}
 
 }

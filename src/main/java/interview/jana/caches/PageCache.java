@@ -1,4 +1,4 @@
-package interview.jana.crawler;
+package interview.jana.caches;
 /**
  * cache for storing the visited URLs must implement this interface
  * @author Anusha
