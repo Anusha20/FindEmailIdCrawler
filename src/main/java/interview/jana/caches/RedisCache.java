@@ -2,6 +2,7 @@ package interview.jana.caches;
 
 import interview.jana.redis.JedisManager;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
  * Cache storing the visited page URL's at the Remote redis
@@ -18,9 +19,9 @@ public class RedisCache implements PageCache, EmailStoreCache {
 			jedis = JedisManager.getJedisConnection();
 			result = jedis.hexists(URL, "URL");
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
+		} catch (Exception e1){
+			System.err.println("isPageAvailable:"+e1.getMessage());
+		}  finally {
 			jedis.close();
 		}
 		return result;
@@ -35,8 +36,8 @@ public class RedisCache implements PageCache, EmailStoreCache {
 			if (val == 1) {
 				result = true;
 			}
-		} catch (Exception e) {
-
+		} catch (Exception e1){
+			System.err.println("insertPage:"+e1.getMessage());
 		} finally {
 			jedis.close();
 		}
@@ -44,7 +45,7 @@ public class RedisCache implements PageCache, EmailStoreCache {
 
 	}
 
-	public static void clearCache() {
+	public void clearCache() {
 		JedisManager.getJedisConnection().flushAll();
 	}
 
@@ -56,11 +57,16 @@ public class RedisCache implements PageCache, EmailStoreCache {
 			if (val == 1) {
 				System.out.println(id);
 			}
-		} catch (Exception e) {
-
-		} finally {
+		} catch (Exception e1){
+			System.err.println("Adding EmailId:"+e1.getMessage());
+		}finally {
 			jedis.close();
 		}
 
+	}
+
+	public void clear() {
+		clearCache();
+		
 	}
 }

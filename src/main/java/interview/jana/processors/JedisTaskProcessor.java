@@ -1,5 +1,6 @@
 package interview.jana.processors;
 
+import interview.jana.crawler.FindEmailIds;
 import interview.jana.redis.JedisManager;
 import interview.jana.redis.JedisPublisher;
 import redis.clients.jedis.Jedis;
@@ -24,13 +25,13 @@ public class JedisTaskProcessor implements TaskProcessor {
 	 * @throws InterruptedException
 	 */
 	public void startJedisSubScriber() throws InterruptedException {
-		final JedisPubSub jedisPubSub = new JedisListener();
+		JedisManager.setJedisPubSub(new JedisListener());
 		new Thread(new Runnable() {
 			public void run() {
 				Jedis jedis = null;
 				try {
 					jedis = JedisManager.getJedisConnection();
-					jedis.subscribe(jedisPubSub, "CrawlerQueue");
+					jedis.subscribe(JedisManager.getJedisPubSub(), "CrawlerQueue");
 
 				} catch (Exception e) {
 					log(">>> OH NOES Sub - " + e.getMessage());
@@ -39,6 +40,7 @@ public class JedisTaskProcessor implements TaskProcessor {
 				}
 			}
 		}, "subscriberThread").start();
+		
 
 	}
 
@@ -82,4 +84,8 @@ public class JedisTaskProcessor implements TaskProcessor {
 			OnReceivingURL(message);
 		}
 	}
+	
+	
+	
+	
 }

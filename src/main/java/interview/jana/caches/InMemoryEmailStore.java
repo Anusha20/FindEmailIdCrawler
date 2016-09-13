@@ -23,4 +23,8 @@ public class InMemoryEmailStore implements EmailStoreCache {
 			System.out.println(ids);
 		}
 	}
+	public void clear() {
+		emailIds.clear();
+		
+	}
 }

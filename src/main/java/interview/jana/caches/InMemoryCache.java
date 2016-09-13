@@ -19,5 +19,10 @@ public class InMemoryCache implements PageCache {
 			return true;
 		return false;
 	}
+
+	public void clearCache() {
+		pages.clear();
+		
+	}
 	
 }

@@ -10,6 +10,8 @@ public interface PageCache {
 	
 	public boolean insertPage(String URL);
 	
+	public void clearCache();
+	
 	
 
 }

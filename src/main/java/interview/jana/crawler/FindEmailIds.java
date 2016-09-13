@@ -3,6 +3,8 @@ package interview.jana.crawler;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.validator.routines.UrlValidator;
+
 import interview.jana.caches.EmailStoreCache;
 import interview.jana.caches.InMemoryCache;
 import interview.jana.caches.InMemoryEmailStore;
@@ -11,6 +13,7 @@ import interview.jana.caches.RedisCache;
 import interview.jana.processors.JedisTaskProcessor;
 import interview.jana.processors.RunnableProcessor;
 import interview.jana.processors.TaskProcessor;
+import interview.jana.redis.JedisManager;
 
 /**
  * Main Class used to configure the caches and Executors
@@ -24,23 +27,62 @@ public class FindEmailIds {
 	public static ExecutorService executor = Executors.newSingleThreadExecutor();
 	public static PageCache cache;
 	public static String homeURL;
+	public static int level = Integer.MAX_VALUE;
 	public static EmailStoreCache emailStore;
 
 	public static void main(String args[]) {
+		if (args.length == 2) {
+			String inputlevel = args[1];
+			if (isInteger(inputlevel)) {
+				level = Integer.parseInt(inputlevel);
+			}
+		}
+		String validUrl = validateUrl(args[0]);
+		if (validUrl != null) {
+			initialize();
+			UseJedisPubsub(validUrl);
+			System.out.println("Found Processing:" + validUrl);
+			System.out.println("Found these emailIds:");
+		} else {
+			System.out.println("Invalid URL");
+		}
 
-		initialize(args[0]);
-		String url = "http://" + homeURL;
-		System.out.println("Found Processing:" + url);
-		UseJedisPubsub(url);
-		System.out.println("Found these emailIds:");
+	}
+
+	private static boolean isInteger(String s) {
+		if (s.isEmpty())
+			return false;
+		for (int i = 0; i < s.length(); i++) {
+			if (i == 0 && s.charAt(i) == '-') {
+				if (s.length() == 1)
+					return false;
+				else
+					continue;
+			}
+			if (Character.digit(s.charAt(i), 10) < 0)
+				return false;
+		}
+		return true;
+	}
+
+	private static String validateUrl(String input) {
+		String validURL = null;
+		if (input != null) {
+			String url = "http://" + input;
+			UrlValidator urlValidator = new UrlValidator();
+			if (urlValidator.isValid(url)) {
+				homeURL = input;
+				validURL = url;
+			}
+		}
+		return validURL;
 
 	}
 
 	// Initialize using Remote caches
-	public static void initialize(String url) {
-		homeURL = url;
-		RedisCache.clearCache();
+	public static void initialize() {
 		cache = new RedisCache();
+		cache.clearCache();
 		emailStore = (EmailStoreCache) cache;
 	}
 
@@ -67,11 +109,21 @@ public class FindEmailIds {
 			// Need to make sure that the subscriber is initialized before the
 			// publisher;
 			Thread.sleep(1000);
+			processor.submitForProcessing(url);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			shutdown(e.getMessage());
 		}
-		processor.submitForProcessing(url);
+
+	}
+
+	public static void shutdown(String cause) {
+		System.out.println("Shutting down : " + cause);
+		executor.shutdownNow();
+		cache.clearCache();
+		emailStore.clear();
+		JedisManager.shutdown();
+		System.exit(1);
 
 	}
 
